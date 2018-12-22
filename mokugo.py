@@ -1,8 +1,14 @@
 import numpy as np
+import random
+import sys
 
-PIONS = 3
-N = 5
+sys.setrecursionlimit(1000000)
+
+PIONS = 2
+N = 2
 END = 1
+
+#BOARD VALUES
 EMPTY = 0
 PLAYER_1 = 1
 PLAYER_2 = 2
@@ -35,6 +41,14 @@ class Tree:
     
     def add_score(self, score):
         self.score += score
+
+    def to_string(self, layer=0):
+        if self is not None:
+            ret = "\t"*layer + "Hint : " + str(self.hint) + " | Score : " + str(self.score) + "\n"
+            for i in range(len(self.branch)):
+                if self.branch[i] is not None:
+                    ret += self.branch[i].to_string(layer+1)
+            return ret
 
 def eval_position(P,A):
     for j in range(0,N):
@@ -98,17 +112,16 @@ def eval_position(P,A):
     """
     return 0
 
-def create_plate():
-    print("Plate Created")
+def create_board():
+    print("Board Created")
     P = [[0] * N for _ in range(N)]
     return P;
 
-def ai_play(P, player,x,y):
-    if P[x][y] == 0:
-        P[x][y] = player
-        return 0
-    else:
-        return -1
+#Play a hint
+def ai_play(P, player, hint):
+    (x,y) = hint
+    P[x][y] = player
+    return P
 
 def play(P, player):
     print("-----Player " + str(player) + "------\n")
@@ -120,45 +133,78 @@ def play(P, player):
     else:
         print("Invalid position ! ")
         play(P,player)
-    return 0
+    return (x,y)
 
-def print_plate(P):
+def print_board(P):
     print('\n'.join([''.join(['{:4}'.format(item) for item in row]) for row in P]))
     print("\n")
     return 0
 
-def calculate_next(T,P,player):
-    for i in range(N):
-        for j in range(N):
-            while(ai_play(P,player,i,j) == -1 and not full(P))#Try to play
-            if eval_position(P,PIONS) == 1000 and player == 1:#Player 1 won
-                T.add_branch(Tree(NULL,(i,j),1)
-            elif evla_position(P,PION) == -1000 and player == 2:#Player 2 won
-                T.add_branch(Tree(NULL,(i,j),-1)
-            else:#Nobody won
-                calculate_next(T,P,player)
-            else:
+def calc_possible_hints(P,player,N):
+    possible_hints = []
+    for x in range(N):
+        for y in range(N):
+            if P[x][y] == 0:
+                possible_hints.append((x,y))
+    return possible_hints
 
-    calculate_next(T
 
-                
-    return (x,y);
+def construct_tree(T,P,player):
+    #Construct descisional Tree
+    if not full(P):
+        if player == PLAYER_1:
+            for possible_hint in calc_possible_hints(P,PLAYER_1,N):
+                #player 1
+                P = ai_play(P,PLAYER_1,possible_hint)#Play
+                if eval_position(P,PIONS) == 1000 and player == 1:#Player 1 won
+                    T.add_branch(Tree(None,possible_hint,1))
+                else:#Nobody won
+                    T.add_branch(Tree(None,possible_hint,0))
+            construct_tree(T,P,PLAYER_2)
+
+        if player == PLAYER_2:
+            for possible_hint in calc_possible_hints(P,PLAYER_2,N):
+                #player 1
+                P = ai_play(P,PLAYER_1,possible_hint)#Play
+                if eval_position(P,PIONS) == -1000 and player == 2:#Player 2 won
+                    T.add_branch(Tree(None,possible_hint,1))
+                else:#Nobody won
+                    T.add_branch(Tree(None,possible_hint,0))
+            construct_tree(T,P,PLAYER_1)
+    return 0
+
+def get_best_hint(T):
+    if T == None:
+        print("Oh probleme")
+        return (0,0)
+    return T.branch[np.argmax(T.branch)].hint
 
 def full(P):
-    for i in range(N):
-        for j in range(N):
-            if P[x][y] != 0
-                return False
+    for x in range(N):
+        for y in range(N):
+            if P[x][y] is not 0:
+                return True
+
+def navigate_tree(T,hint):
+    for branch in T.branch:
+        if branch.score == hint:
+            return branch
 
 def main():
     print("Init")
     end = False
     #INIT
-    P = create_plate()
+    P = create_board()
+    hint = (random.randint(0,N-1), random.randint(0,N-1))
+    ai_play(P,PLAYER_1,hint)
+    T = Tree(None, hint, 0)
+    Pp = P.copy()
+    construct_tree(T,Pp,PLAYER_1)
+    print(T.to_string())
     #GAME
     while(end != True):
-        play(P,PLAYER_1)
-        print_plate(P)
+        ai_play(P,get_best_hint(T))
+        print_board(P)
         e = eval_position(P,PIONS)
         if(e == 1000):
             print("White wins !")
@@ -166,8 +212,9 @@ def main():
         elif(e == -1000):
             print("Black wins !")
             break
-        play(P,PLAYER_2)
-        print_plate(P)
+        hint = play(P,PLAYER_2)
+        T = navigate_tree(hint)
+        print_board(P)
         e = eval_position(P,PIONS)
         if(e == 1000):
             print("White wins !")
@@ -175,7 +222,6 @@ def main():
         elif(e == -1000):
             print("Black wins !")
             break
-
     return 0;
 
 if __name__ == "__main__":

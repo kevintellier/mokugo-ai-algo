@@ -29,6 +29,15 @@ class Tree:
     def add_score(self, score):
         self.score += score
 
+    def to_string(self, layer=0):
+        if self is not None:
+            ret = "\t"*layer + "Hint : " + str(self.hint) + " | Score : " + str(self.score) + "\n"
+            for i in range(len(self.branch)):
+                if self.branch[i] is not None:
+                    ret += self.branch[i].to_string(layer+1)
+            return ret
+
+
 T5 = Tree(None,(5,5),1)
 T6 = Tree(None,(5,4),1)
 
@@ -41,5 +50,8 @@ T4 = Tree(T2,(2,7),0)
 
 T = Tree(T3,(2,4),0)
 T.add_branch(T4)
+
+print(T.to_string())
+
 print(T.get_best_move())
 
